@@ -1,24 +1,43 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerCombat : MonoBehaviour
 {
+    [Header("Attack Settings")]
     public float lightKnockback = 5f;
-    public float heavyKnockback = 10f;
     public float attackRange = 0.6f;
     public float attackCooldown = 0.3f;
-    public float heavyCooldown = 0.8f;
     public Transform attackPoint;
     public LayerMask enemyLayers;
 
-    private float nextLightTime = 0f;
-    private float nextHeavyTime = 0f;
+    [Header("Charge Attack")]
+    public float maxChargeTime = 2f;
+    public float minChargeKnockback = 8f;
+    public float maxChargeKnockback = 25f;
+    private float currentCharge = 0f;
+    private bool isCharging = false;
 
-    // Combo tracking
+    [Header("Combo System")]
+    public float comboResetTime = 0.5f;
     private int comboStep = 0;
-    private float comboResetTime = 0.5f;
     private float lastAttackTime;
+
+    private float nextLightTime = 0f;
+
+    private PlayerAudio playerAudio;
+
+    void Start()
+    {
+        playerAudio = GetComponent<PlayerAudio>();
+    }
+
+    void Update()
+    {
+        if (isCharging)
+            currentCharge += Time.deltaTime;
+    }
 
     void OnLightAttack()
     {
@@ -29,27 +48,39 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    void OnHeavyAttack()
+    // Charge attack replaces heavy attack
+    void OnHeavyAttack(InputValue value)
     {
-        if (Time.time >= nextHeavyTime)
+        if (value.isPressed)
         {
-            HeavyAttack();
-            nextHeavyTime = Time.time + heavyCooldown;
+            // Start charging
+            isCharging = true;
+            currentCharge = 0f;
+            playerAudio?.PlayCharge();
+            Debug.Log("Started charging...");
+        }
+        else if (isCharging)
+        {
+            // Release charge
+            isCharging = false;
+
+            float chargeRatio = Mathf.Clamp01(currentCharge / maxChargeTime);
+            float finalKnockback = Mathf.Lerp(minChargeKnockback, maxChargeKnockback, chargeRatio);
+            Debug.Log($"Charge attack released with power {finalKnockback:F1}");
+
+            DoAttack(finalKnockback);
+            playerAudio?.PlayAttack();
+
+            currentCharge = 0f;
         }
     }
 
     void LightAttack()
     {
-        Debug.Log(name + " did LIGHT attack");
+        Debug.Log(name + " performed LIGHT attack");
         DoAttack(lightKnockback);
+        playerAudio?.PlayAttack();
         TrackCombo();
-    }
-
-    void HeavyAttack()
-    {
-        Debug.Log(name + " did HEAVY attack");
-        DoAttack(heavyKnockback);
-        comboStep = 0; // reset combo
     }
 
     void DoAttack(float knockbackForce)
@@ -60,12 +91,11 @@ public class PlayerCombat : MonoBehaviour
 
         foreach (Collider2D enemy in hitEnemies)
         {
-            PlayerController controller = enemy.GetComponent<PlayerController>();
-            if (controller != null)
+            PlayerKnockback kb = enemy.GetComponent<PlayerKnockback>();
+            if (kb != null)
             {
-                Vector2 direction = (enemy.transform.position - transform.position).normalized;
-                controller.ApplyKnockback(direction, knockbackForce);
-                Debug.Log(enemy.name + " got knocked back with force " + knockbackForce);
+                kb.TakeHit(knockbackForce, transform.position);
+                playerAudio?.PlayHit();
             }
         }
     }
@@ -93,4 +123,3 @@ public class PlayerCombat : MonoBehaviour
         Gizmos.DrawWireSphere(attackPoint.position, attackRange);
     }
 }
-

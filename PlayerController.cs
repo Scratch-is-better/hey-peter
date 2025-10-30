@@ -1,43 +1,46 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
+    [Header("Movement Settings")]
     public float moveSpeed = 5f;
     public float jumpForce = 7f;
+    public int maxJumps = 2;
+    private int jumpCount = 0;
 
-    private Vector2 moveInput;
-    private Rigidbody2D rb;
-    private bool isGrounded;
+    [Header("Crouch Settings")]
+    public float crouchSpeedMultiplier = 0.5f;
+    private bool isCrouching = false;
 
-    // Knockback
-    private Vector2 knockback;
-    public float knockbackDecay = 5f;
-
-    [Header("Combat")]
+    [Header("Attack Point")]
     public Transform attackPoint;
     public Vector3 rightAttackOffset;
     public Vector3 leftAttackOffset;
 
+    private Vector2 moveInput;
+    private Rigidbody2D rb;
+    private bool isGrounded;
+    private Vector2 knockback;
+    public float knockbackDecay = 5f;
+
+    private PlayerAudio playerAudio;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        playerAudio = GetComponent<PlayerAudio>();
     }
 
     void Update()
     {
-        // Super simple ground check:
-        // If Y velocity is nearly 0 and we're not falling, assume grounded
-        if (Mathf.Abs(rb.velocity.y) < 0.01f)
-        {
-            isGrounded = true;
-        }
-        else
-        {
-            isGrounded = false;
-        }
+        // Simple grounded check
+        isGrounded = Mathf.Abs(rb.velocity.y) < 0.01f;
+
+        if (isGrounded)
+            jumpCount = 0; // reset jumps when grounded
     }
 
     void OnMove(InputValue value)
@@ -53,20 +56,26 @@ public class PlayerController : MonoBehaviour
 
     void OnJump()
     {
-        if (isGrounded)
+        if (jumpCount < maxJumps)
         {
-            rb.velocity = new Vector2(rb.velocity.x, 0f); // reset Y velocity
+            rb.velocity = new Vector2(rb.velocity.x, 0f);
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            jumpCount++;
+            playerAudio?.PlayJump();
         }
+    }
+
+    void OnCrouch(InputValue value)
+    {
+        isCrouching = value.isPressed;
+        moveSpeed = isCrouching ? 5f * crouchSpeedMultiplier : 5f;
+        transform.localScale = new Vector3(1f, isCrouching ? 0.7f : 1f, 1f);
     }
 
     void FixedUpdate()
     {
-        // Movement
         Vector2 targetVelocity = new Vector2(moveInput.x * moveSpeed, rb.velocity.y);
-
-        // Apply knockback
-        targetVelocity += knockback;
+        targetVelocity += knockback; // apply knockback
         rb.velocity = targetVelocity;
 
         // Knockback decay

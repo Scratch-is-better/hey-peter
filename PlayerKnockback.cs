@@ -1,33 +1,38 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerKnockback : MonoBehaviour
 {
-    public float damagePercent = 0f; 
-    public float knockbackMultiplier = 0.1f; 
-    private Rigidbody2D rb;
+    public float damagePercent = 0f;
+    public float knockbackMultiplier = 0.08f; // how much knockback scales per % damage
+    private PlayerController controller;
+    private PlayerAudio playerAudio;
 
-    void Awake()
+    void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
+        controller = GetComponent<PlayerController>();
+        playerAudio = GetComponent<PlayerAudio>();
     }
 
-    public void TakeHit(float baseKnockback, Vector2 attackDirection)
+    public void TakeHit(float baseKnockback, Vector2 attackerPosition)
     {
-        damagePercent += 10f; 
+        damagePercent += baseKnockback * 2f; // increase damage % with hit power
 
-        float knockbackForce = baseKnockback + (damagePercent * knockbackMultiplier);
+        float totalKnockback = baseKnockback * (1f + (damagePercent * knockbackMultiplier));
 
-        rb.AddForce(attackDirection.normalized * knockbackForce, ForceMode2D.Impulse);
+        // Direction away from attacker
+        Vector2 direction = ((Vector2)transform.position - attackerPosition).normalized;
 
-        Debug.Log(name + " at " + damagePercent + "%, took knockback " + knockbackForce);
+        // Apply to controller (so it doesn’t get cancelled by movement)
+        controller?.ApplyKnockback(direction, totalKnockback);
+
+        Debug.Log($"{gameObject.name} took knockback {totalKnockback:F2} | Damage%: {damagePercent:F1}");
+        playerAudio?.PlayHit();
     }
 
     public void ResetPlayer()
     {
         damagePercent = 0f;
-        transform.position = Vector3.zero;
-        rb.velocity = Vector2.zero;
+        controller?.ApplyKnockback(Vector2.zero, 0f);
+        transform.position = Vector2.zero;
     }
 }
