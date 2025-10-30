@@ -36,7 +36,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // Simple grounded check
+  
         isGrounded = Mathf.Abs(rb.velocity.y) < 0.01f;
 
         if (isGrounded)

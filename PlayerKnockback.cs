@@ -3,7 +3,7 @@ using UnityEngine;
 public class PlayerKnockback : MonoBehaviour
 {
     public float damagePercent = 0f;
-    public float knockbackMultiplier = 0.08f; // how much knockback scales per % damage
+    public float knockbackMultiplier = 0.08f; 
     private PlayerController controller;
     private PlayerAudio playerAudio;
 
@@ -15,11 +15,11 @@ public class PlayerKnockback : MonoBehaviour
 
     public void TakeHit(float baseKnockback, Vector2 attackerPosition)
     {
-        damagePercent += baseKnockback * 2f; // increase damage % with hit power
+        damagePercent += baseKnockback * 2f; 
 
         float totalKnockback = baseKnockback * (1f + (damagePercent * knockbackMultiplier));
 
-        // Direction away from attacker
+
         Vector2 direction = ((Vector2)transform.position - attackerPosition).normalized;
 
         // Apply to controller (so it doesn’t get cancelled by movement)
