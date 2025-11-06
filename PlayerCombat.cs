@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -48,12 +48,10 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    // Charge attack replaces heavy attack
     void OnHeavyAttack(InputValue value)
     {
         if (value.isPressed)
         {
-            // Start charging
             isCharging = true;
             currentCharge = 0f;
             playerAudio?.PlayCharge();
@@ -61,7 +59,6 @@ public class PlayerCombat : MonoBehaviour
         }
         else if (isCharging)
         {
-            // Release charge
             isCharging = false;
 
             float chargeRatio = Mathf.Clamp01(currentCharge / maxChargeTime);
@@ -88,7 +85,7 @@ public class PlayerCombat : MonoBehaviour
         if (attackPoint == null) return;
 
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
-
+        bool connected = false;
         foreach (Collider2D enemy in hitEnemies)
         {
             PlayerKnockback kb = enemy.GetComponent<PlayerKnockback>();
@@ -96,8 +93,11 @@ public class PlayerCombat : MonoBehaviour
             {
                 kb.TakeHit(knockbackForce, transform.position);
                 playerAudio?.PlayHit();
+                connected = true;
             }
         }
+        if (connected)
+            GetComponent<PlayerAttackFreeze>().OnAttackLanded();
     }
 
     void TrackCombo()

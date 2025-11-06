@@ -20,7 +20,7 @@ public class PlayerController : MonoBehaviour
     public Vector3 rightAttackOffset;
     public Vector3 leftAttackOffset;
 
-    private Vector2 moveInput;
+    public Vector2 moveInput;
     private Rigidbody2D rb;
     private bool isGrounded;
     private Vector2 knockback;
@@ -36,7 +36,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-  
+        // Simple grounded check
         isGrounded = Mathf.Abs(rb.velocity.y) < 0.01f;
 
         if (isGrounded)
@@ -69,7 +69,7 @@ public class PlayerController : MonoBehaviour
     {
         isCrouching = value.isPressed;
         moveSpeed = isCrouching ? 5f * crouchSpeedMultiplier : 5f;
-        transform.localScale = new Vector3(1f, isCrouching ? 0.7f : 1f, 1f);
+        transform.localScale = new Vector3(2.348f, isCrouching ? 3.9285f * 0.75f : 3.9285f, 1f);
     }
 
     void FixedUpdate()
